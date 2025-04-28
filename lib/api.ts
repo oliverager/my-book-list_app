@@ -1,9 +1,8 @@
 import { ApiResponse, Activity, Book, ReadingGoal, ReadingStat, User } from "@/types"
 
 const API_BASE_URLS = {
-  auth: "http://localhost:3500/auth",
+  auth: "http://localhost:5250/auth",
   books: "http://localhost:3500/books",
-  users: "http://localhost:3500/users",
   activities: "http://localhost:3500/activities",
   goals: "http://localhost:3500/goals",
   stats: "http://localhost:3500/stats",
@@ -14,10 +13,15 @@ const API_BASE_URLS = {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}))
+    if (response.status === 401) {
+      // Handle unauthorized access
+      throw new Error("Unauthorized access. Please log in again.")
+    }
     throw new Error(errorData.message || `API error: ${response.status}`)
   }
   return response.json()
 }
+
 
 // Authentication API calls
 export async function getCurrentUser() {
@@ -40,7 +44,7 @@ export async function login(email: string, password: string) {
     },
     body: JSON.stringify({ email, password }),
   })
-  return handleResponse<{ data: { user: User; token: string } }>(response)
+  return handleResponse<{ token: string }>(response)
 }
 
 export async function register(userData: { name: string; username: string; email: string; password: string }) {

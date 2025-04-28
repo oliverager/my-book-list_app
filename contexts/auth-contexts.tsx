@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { User } from "@/types"
-import { getCurrentUser, login, register, logout } from "@/lib/api"
+import { getCurrentUser, login as loginApi, register as registerApi, logout as logoutApi } from "@/lib/api"
 
 interface AuthContextType {
   user: User | null
@@ -22,29 +22,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Check if user is logged in on initial load
-    const checkAuth = async () => {
+    const initializeUser = async () => {
+      setIsLoading(true)
       try {
         const response = await getCurrentUser()
         setUser(response.data)
       } catch (err) {
-        // User is not logged in, which is fine
-        console.log("User not logged in", err)
+        console.error("No valid session", err)
+        setUser(null) // ← IMPORTANT: just set user null, no redirect
       } finally {
         setIsLoading(false)
       }
     }
-
-    checkAuth()
-  }, [])
+  
+    initializeUser()
+  }, [])  
 
   const loginUser = async (email: string, password: string) => {
     setIsLoading(true)
     setError(null)
 
     try {
-      const response = await login(email, password)
-      setUser(response.data.user)
+      await loginApi(email, password)
+      const response = await getCurrentUser()
+      setUser(response.data)
     } catch (err) {
       console.error("Login error:", err)
       setError(err instanceof Error ? err.message : "Failed to login")
@@ -57,11 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerUser = async (userData: { name: string; username: string; email: string; password: string }) => {
     setIsLoading(true)
     setError(null)
-  
+
     try {
-      const { user, message } = await register(userData)
+      const { user } = await registerApi(userData)
       setUser(user)
-      console.log(message) // Optional: display this in a toast or banner
     } catch (err) {
       console.error("Registration error:", err)
       setError(err instanceof Error ? err.message : "Failed to register")
@@ -70,15 +70,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false)
     }
   }
-  
-  
 
   const logoutUser = async () => {
     setIsLoading(true)
     setError(null)
 
     try {
-      await logout()
+      await logoutApi()
       setUser(null)
     } catch (err) {
       console.error("Logout error:", err)
@@ -89,9 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const clearError = () => {
-    setError(null)
-  }
+  const clearError = () => setError(null)
 
   return (
     <AuthContext.Provider
