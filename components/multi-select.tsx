@@ -87,7 +87,7 @@ export function MultiSelect({
             onBlur={() => setOpen(false)}
             onFocus={() => setOpen(true)}
             placeholder={selected.length === 0 ? placeholder : ""}
-            className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+            className="ml-2 flex-1 bg-transparent outline-none placeholder:text-gray-400 text-gray-700"
           />
         </div>
       </div>
@@ -107,7 +107,7 @@ export function MultiSelect({
                       setInputValue("")
                       onChange([...selected, option.value])
                     }}
-                    className={"cursor-pointer"}
+                    className="cursor-pointer text-gray-700"
                   >
                     {option.label}
                   </CommandItem>
