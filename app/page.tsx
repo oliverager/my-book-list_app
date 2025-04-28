@@ -1,3 +1,5 @@
+"use client"
+
 import { BookCarouselWithApi } from "@/components/book-carousel-with-api"
 import { ReadingStatsWithApi } from "@/components/reading-stats-with-api"
 import { ReadingGoals } from "@/components/reading-goals"
@@ -9,8 +11,11 @@ import { BookOpen, ListChecks, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { GuestWelcome } from "@/components/guest-welcome"
 import { AuthCheck } from "@/components/auth-check"
+import { useAuth } from "@/contexts/auth-contexts"
 
 export default function Home() {
+  const { isLoading } = useAuth()
+
   return (
     <main className="min-h-screen bg-gray-50">
       <div className="max-w-6xl mx-auto bg-white shadow-sm">

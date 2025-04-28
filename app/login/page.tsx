@@ -53,6 +53,8 @@ export default function LoginPage() {
 
       // Redirect to home page after successful login
       router.push("/")
+
+      // No need for setTimeout or router.refresh() anymore
     } catch (error) {
       console.error("Login error:", error)
       toast({

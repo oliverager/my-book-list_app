@@ -9,7 +9,21 @@ import { Button } from "@/components/ui/button"
 
 export function MainNav() {
   const pathname = usePathname()
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+
+  // If auth state is loading, show a simplified nav
+  if (isLoading) {
+    return (
+      <nav className="flex items-center space-x-6">
+        <Link href="/" className="text-sm font-medium transition-colors hover:text-primary">
+          Home
+        </Link>
+        <Link href="/discover" className="text-sm font-medium transition-colors hover:text-primary">
+          Discover
+        </Link>
+      </nav>
+    )
+  }
 
   // Navigation items for authenticated users
   const authenticatedNavItems = [

@@ -21,7 +21,7 @@ export default function BooksPage() {
       <div className="max-w-6xl mx-auto bg-white shadow-sm">
         <header className="flex items-center justify-between border-b p-4">
           <div className="flex items-center space-x-6">
-            <h1 className="text-2xl font-bold">My Book List</h1>
+            <h1 className="text-2xl font-bold text-black">My Book List</h1>
             <MainNav />
           </div>
           <UserNav />

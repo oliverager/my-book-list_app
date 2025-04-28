@@ -17,7 +17,17 @@ import { useAuth } from "@/contexts/auth-contexts"
 import Link from "next/link"
 
 export function UserNav() {
-  const { user, logout } = useAuth()
+  const { user, logout, isLoading } = useAuth()
+
+  // If auth state is loading, show only the theme toggle
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-4">
+        <ThemeToggle />
+        <div className="h-10 w-10 rounded-full bg-gray-200 animate-pulse"></div>
+      </div>
+    )
+  }
 
   // If user is not authenticated, show login/register buttons
   if (!user) {

@@ -1,8 +1,8 @@
-import { ApiResponse, Activity, Book, ReadingGoal, ReadingStat, User } from "@/types"
+import type { ApiResponse, Activity, Book, ReadingGoal, ReadingStat, User } from "@/types"
 
 const API_BASE_URLS = {
-  auth: "http://localhost:5250/auth",
-  books: "http://localhost:3500/books",
+  auth: "http://localhost:8080/auth",
+  books: "http://localhost:9090/api/book",
   activities: "http://localhost:3500/activities",
   goals: "http://localhost:3500/goals",
   stats: "http://localhost:3500/stats",
@@ -22,18 +22,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
   return response.json()
 }
 
-
 // Authentication API calls
 export async function getCurrentUser() {
+  console.log("Calling getCurrentUser API")
   const response = await fetch(`${API_BASE_URLS.auth}/me`, {
     method: "GET",
-    credentials: "include", // Important for cookies
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-  })
-  return handleResponse<ApiResponse<User>>(response)
+  });
+
+  console.log("getCurrentUser response status:", response.status);
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch user");
+  }
+
+  const user: User = await response.json();
+  console.log("Parsed user from getCurrentUser:", user);
+
+  return user;
 }
+
 
 export async function login(email: string, password: string) {
   const response = await fetch(`${API_BASE_URLS.auth}/login`, {
@@ -68,6 +79,17 @@ export async function logout() {
     },
   })
   return handleResponse<{ message: string }>(response)
+}
+
+export async function fetchBooks() {
+  const response = await fetch(`${API_BASE_URLS.books}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+  return handleResponse<{ data: Book[]}>(response)
 }
 
 // Books API calls

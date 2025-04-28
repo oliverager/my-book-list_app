@@ -21,6 +21,8 @@ export function BookCarouselWithApi() {
     const fetchBooks = async () => {
       setLoading(true)
       try {
+        const responseToLog = await fetchBooks()
+        console.log("Fetched books:", responseToLog)
         const response = await getBooks({ status: "Reading", limit: 10 })
         setBooks(response.data)
         setError(null)
