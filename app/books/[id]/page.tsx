@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, use } from "react"
 import { useRouter } from "next/navigation"
 import Image from "next/image"
 import Link from "next/link"
-import { getBook, updateBookProgress, deleteBook } from "@/lib/api"
+import { getBook, updateBookProgress, deleteBook, getBooks } from "@/lib/api"
 import type { Book } from "@/types"
 import { MainNav } from "@/components/main-nav"
 import { UserNav } from "@/components/user-nav"
@@ -41,7 +41,8 @@ import {
   BarChart3,
 } from "lucide-react"
 
-export default function BookDetailPage({ params }: { params: { id: string } }) {
+export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter()
   const { toast } = useToast()
   const [book, setBook] = useState<Book | null>(null)
@@ -56,14 +57,13 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
     const fetchBook = async () => {
       setLoading(true)
       try {
-        const response = await getBook(params.id)
+        const response = await getBook(Number(id))
         setBook(response.data)
-        setCurrentPage(response.data.progress.current)
+        setCurrentPage(100)
+      
+        const books = await getBooks()
+        setRelatedBooks(books)
 
-        // In a real app, you would fetch related books based on categories
-        // For now, we'll simulate this with a mock API call
-        const mockRelatedBooks = await getBook(params.id)
-        setRelatedBooks([mockRelatedBooks.data])
       } catch (err) {
         console.error("Error fetching book:", err)
         setError("Failed to load book details. Please try again later.")
@@ -73,42 +73,37 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
     }
 
     fetchBook()
-  }, [params.id])
+  }, [id])
 
   const handleProgressUpdate = async () => {
-    if (!book) return
-
-    setUpdatingProgress(true)
+    if (!book) return;
+  
+    setUpdatingProgress(true);
     try {
       await updateBookProgress(book.id, {
         current: currentPage,
-        total: book.progress.total,
-      })
-
-      // Update local state
-      setBook({
-        ...book,
-        progress: {
-          ...book.progress,
-          current: currentPage,
-        },
-      })
-
+        total: book.pages,
+      });
+  
+      // Just update currentPage state
+      setCurrentPage(currentPage);
+  
       toast({
         title: "Progress updated",
-        description: `Your reading progress has been updated to ${currentPage} of ${book.progress.total} pages.`,
-      })
+        description: `Your reading progress has been updated to ${currentPage} of ${book.pages} pages.`,
+      });
     } catch (err) {
-      console.error("Error updating progress:", err)
+      console.error("Error updating progress:", err);
       toast({
         title: "Error",
         description: "Failed to update reading progress. Please try again.",
         variant: "destructive",
-      })
+      });
     } finally {
-      setUpdatingProgress(false)
+      setUpdatingProgress(false);
     }
-  }
+  };
+  
 
   const handleDeleteBook = async () => {
     if (!book) return
@@ -143,7 +138,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
     return <BookDetailSkeleton />
   }
 
-  if (error || !book) {
+  if (error ||!book) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
         <div className="max-w-6xl mx-auto bg-white dark:bg-gray-800 shadow-sm">
@@ -170,7 +165,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
     )
   }
 
-  const progressPercentage = (book.progress.current / book.progress.total) * 100
+  const progressPercentage = (100 / book.pages) * 100
 
   return (
     <main className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -290,7 +285,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                   <BookOpen className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Status</p>
-                    <p className="font-medium">{book.status}</p>
+                    <p className="font-medium">Read</p>
                   </div>
                 </div>
                 {book.publishedDate && (
@@ -315,7 +310,7 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                   <Clock className="h-5 w-5 mr-2 text-gray-500 dark:text-gray-400" />
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">Pages</p>
-                    <p className="font-medium">{book.progress.total}</p>
+                    <p className="font-medium">{book.pages}</p>
                   </div>
                 </div>
               </div>
@@ -332,24 +327,24 @@ export default function BookDetailPage({ params }: { params: { id: string } }) {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">
-                      {book.progress.current} of {book.progress.total} pages
+                      {100} of {book.pages} pages
                     </span>
                     <span className="text-sm font-medium">{Math.round(progressPercentage)}%</span>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
 
-                  {book.status === "Reading" && (
+                  {"Reading" === "Reading" && (
                     <div className="pt-4 space-y-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Update progress:</span>
                         <span className="text-sm font-medium">
-                          {currentPage} / {book.progress.total} pages
+                          {currentPage} / {book.pages} pages
                         </span>
                       </div>
                       <Slider
                         value={[currentPage]}
                         min={0}
-                        max={book.progress.total}
+                        max={book.pages}
                         step={1}
                         onValueChange={(value) => setCurrentPage(value[0])}
                         className="mb-4"

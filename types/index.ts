@@ -13,6 +13,22 @@ export enum BookCategory {
   Dystopian = "Dystopian",
 }
 
+export const NumberToBookCategoryMap: Record<number, BookCategory> = {
+  1: BookCategory.Romance,
+  2: BookCategory.YoungAdult,
+  3: BookCategory.Fantasy,
+  4: BookCategory.Action,
+  5: BookCategory.ScienceFiction,
+  6: BookCategory.Mystery,
+  7: BookCategory.Thriller,
+  8: BookCategory.Horror,
+  9: BookCategory.HistoricalFiction,
+  10: BookCategory.Biography,
+  11: BookCategory.SelfHelp,
+  12: BookCategory.Dystopian,
+};
+
+
 // Type Definitions
 export type User = {
   id: number
@@ -23,23 +39,54 @@ export type User = {
   image?: string
 }
 
+export type BookStatus = "Read" | "Reading" | "Plan to read"
+
+export type UserBook = {
+  id: string;          // GUID
+  userId: string;      // GUID
+  bookId: string;      // GUID
+  status: BookStatus; // restrict to known statuses
+  score: number | null;  // rating, can be null if not rated yet
+  progress: number | null;  // progress in %, pages, etc.
+  finishedAt: string | null; // ISO date string or null
+  createdAt: string;    // ISO date string
+};
+
+
 // Update the Book type to use the BookCategory enum
 export type Book = {
-  id: number
-  title: string
-  author: string
-  image: string
-  score?: string
-  status: "Read" | "Reading" | "Plan to read"
-  progress: {
-    current: number
-    total: number
-  }
-  categories: BookCategory[]
-  description?: string
-  publishedDate?: string
-  isbn?: string
-}
+  id: number;
+  title: string;
+  publisher?: string;
+  author: string;
+  image: string;
+  score?: string;
+  pages: number;
+  categories: BookCategory[];
+  description?: string;
+  publishedDate?: string;
+  isbn?: string;
+};
+
+
+export type BookResponseDto = {
+  id: number;
+  title: string;
+  year: number;
+  pageCount: number;
+  coverUrl: string;
+  isbn: string;
+  blurp: string;
+  category: number;
+  author: {
+    firstName: string;
+    lastName: string;
+  };
+  publisher: {
+    name: string;
+  };
+};
+
 
 export type Activity = {
   id: number
@@ -90,76 +137,6 @@ export interface PaginatedResponse<T> {
 }
 
 // Mock Data
-export const MOCK_BOOKS: Book[] = [
-  {
-    id: 1,
-    title: "Iron Flame",
-    author: "Rebecca Yarros",
-    image: "/placeholder.svg?height=250&width=170",
-    score: "4.7/5.0",
-    status: "Read",
-    progress: {
-      current: 955,
-      total: 955,
-    },
-    categories: [BookCategory.Romance, BookCategory.YoungAdult, BookCategory.Action, BookCategory.Fantasy],
-    description:
-      "The first book in the Empyrean series, Iron Flame follows the journey of a young warrior in a world of dragons and magic.",
-    publishedDate: "2023-05-15",
-    isbn: "978-1234567890",
-  },
-  {
-    id: 2,
-    title: "A Court of Silver Flames",
-    author: "Sarah J. Maas",
-    image: "/placeholder.svg?height=250&width=170",
-    score: "4.8/5.0",
-    status: "Reading",
-    progress: {
-      current: 633,
-      total: 784,
-    },
-    categories: [BookCategory.Romance, BookCategory.YoungAdult, BookCategory.Action, BookCategory.Fantasy],
-    description:
-      "Part of the Court of Thorns and Roses series, this book follows Nesta Archeron's journey of healing and self-discovery.",
-    publishedDate: "2021-02-16",
-    isbn: "978-1635574074",
-  },
-  {
-    id: 3,
-    title: "Harry Potter and the Sorcerer's Stone",
-    author: "J.K. Rowling",
-    image: "/placeholder.svg?height=250&width=170",
-    score: "4.8/5.0",
-    status: "Plan to read",
-    progress: {
-      current: 0,
-      total: 320,
-    },
-    categories: [BookCategory.YoungAdult, BookCategory.Action, BookCategory.Fantasy],
-    description:
-      "The first book in the Harry Potter series, introducing the world of wizards, magic, and Hogwarts School of Witchcraft and Wizardry.",
-    publishedDate: "1997-06-26",
-    isbn: "978-0590353427",
-  },
-  {
-    id: 4,
-    title: "The Hunger Games",
-    author: "Suzanne Collins",
-    image: "/placeholder.svg?height=250&width=170",
-    score: "4.5/5.0",
-    status: "Reading",
-    progress: {
-      current: 120,
-      total: 374,
-    },
-    categories: [BookCategory.YoungAdult, BookCategory.Action, BookCategory.Dystopian],
-    description:
-      "In a dystopian future, teenagers are forced to participate in a televised death match called the Hunger Games.",
-    publishedDate: "2008-09-14",
-    isbn: "978-0439023481",
-  },
-]
 
 export const MOCK_ACTIVITIES: Activity[] = [
   {
@@ -170,7 +147,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     date: "2 days ago",
     user: {
       name: "You",
-      image: "/placeholder.svg?height=32&width=32",
+      image: "https://m.media-amazon.com/images/I/81LOUMJqbDL._SL1500_.jpg?height=32&width=32",
     },
   },
   {
@@ -181,7 +158,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     date: "1 week ago",
     user: {
       name: "You",
-      image: "/placeholder.svg?height=32&width=32",
+      image: "https://m.media-amazon.com/images/I/91Yx43Yd5eL._SL1500_.jpg?height=32&width=32",
     },
   },
   {
@@ -193,7 +170,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     date: "3 days ago",
     user: {
       name: "You",
-      image: "/placeholder.svg?height=32&width=32",
+      image: "https://m.media-amazon.com/images/I/91Yx43Yd5eL._SL1500_.jpg?height=32&width=32",
     },
   },
   {
@@ -204,7 +181,7 @@ export const MOCK_ACTIVITIES: Activity[] = [
     date: "2 weeks ago",
     user: {
       name: "You",
-      image: "/placeholder.svg?height=32&width=32",
+      image: "https://m.media-amazon.com/images/I/91A6EgLH+2L._SL1500_.jpg?height=32&width=32",
     },
   },
 ]

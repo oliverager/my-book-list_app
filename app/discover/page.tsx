@@ -29,20 +29,14 @@ export default function DiscoverPage() {
       setLoading(true)
       try {
         // Fetch all books for the main discover section
-        const response = await getBooks({
-          search: searchQuery,
-          category: selectedCategory !== "all" ? selectedCategory : undefined,
-          limit: 12,
-        })
-        setBooks(response.data)
+        const books = await getBooks()
+        setBooks(books)
 
         // Fetch featured books (in a real app, this would be a separate API call)
-        const featuredResponse = await getBooks({ limit: 4 })
-        setFeaturedBooks(featuredResponse.data.slice(0, 4))
+        setFeaturedBooks(books.slice(0, 4))
 
         // Fetch new releases (in a real app, this would filter by publication date)
-        const newReleasesResponse = await getBooks({ limit: 6 })
-        setNewReleases(newReleasesResponse.data.slice(0, 6))
+        setNewReleases(books.slice(0, 6))
       } catch (error) {
         console.error("Error fetching books:", error)
       } finally {

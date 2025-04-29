@@ -73,8 +73,8 @@ export default function RegisterPage() {
         description: "Your account has been created. Welcome to My Book List!",
       })
 
-      // Redirect to home page after successful registration
-      router.push("/")
+      // Redirect to login page after successful registration
+      router.push("/login")
     } catch (error) {
       console.error("Registration error:", error)
       toast({

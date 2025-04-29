@@ -21,10 +21,8 @@ export function BookCarouselWithApi() {
     const fetchBooks = async () => {
       setLoading(true)
       try {
-        const responseToLog = await fetchBooks()
-        console.log("Fetched books:", responseToLog)
-        const response = await getBooks({ status: "Reading", limit: 10 })
-        setBooks(response.data)
+        const books = await getBooks()
+        setBooks(books)
         setError(null)
       } catch (err) {
         console.error("Error fetching books:", err)
@@ -37,14 +35,14 @@ export function BookCarouselWithApi() {
     fetchBooks()
   }, [])
 
-  const visibleBooks = books.slice(startIndex, startIndex + 3)
+  const visibleBooks = books.slice(startIndex, startIndex + 5)
 
   const handlePrevious = () => {
     setStartIndex(Math.max(0, startIndex - 1))
   }
 
   const handleNext = () => {
-    setStartIndex(Math.min(books.length - 3, startIndex + 1))
+    setStartIndex(Math.min(books.length - 5, startIndex + 1))
   }
 
   if (loading) {
@@ -80,10 +78,10 @@ export function BookCarouselWithApi() {
                   <div className="flex justify-between text-xs">
                     <span>Progress</span>
                     <span>
-                      {book.progress.current}/{book.progress.total}
+                      {100}/{book.pages}
                     </span>
                   </div>
-                  <Progress value={(book.progress.current / book.progress.total) * 100} className="h-2" />
+                  <Progress value={(100 / book.pages) * 100} className="h-2" />
                 </div>
               </CardContent>
             </Card>
@@ -100,7 +98,7 @@ export function BookCarouselWithApi() {
           <ChevronLeft className="h-4 w-4" />
         </Button>
       )}
-      {startIndex < books.length - 3 && (
+      {startIndex < books.length - 5 && (
         <Button
           variant="outline"
           size="icon"

@@ -1,12 +1,14 @@
-import type { ApiResponse, Activity, Book, ReadingGoal, ReadingStat, User } from "@/types"
+import { type ApiResponse, type Activity, type Book, type ReadingGoal, type ReadingStat, type User, type UserBook, type BookResponseDto, NumberToBookCategoryMap } from "@/types"
 
 const API_BASE_URLS = {
   auth: "http://localhost:8080/auth",
-  books: "http://localhost:9090/api/book",
+  books: "http://localhost:9090/api/Book",
+  author: "http://localhost:9090/api/author",
+  publisher: "http://localhost:9090/api/publisher",
   activities: "http://localhost:3500/activities",
   goals: "http://localhost:3500/goals",
   stats: "http://localhost:3500/stats",
-  mylist: "http://localhost:3500/mylist",
+  mylist: "http://localhost:5030/userbooks",
 }
 
 // Helper function to handle API responses
@@ -81,48 +83,39 @@ export async function logout() {
   return handleResponse<{ message: string }>(response)
 }
 
-export async function fetchBooks() {
+// Books API calls
+export async function getBooks() {
   const response = await fetch(`${API_BASE_URLS.books}`, {
     method: "GET",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
-  })
-  return handleResponse<{ data: Book[]}>(response)
+  });
+
+  const result = await handleResponse<BookResponseDto[]>(response); 
+  // 👆 directly an array of BookResponseDto
+
+  const mappedBooks: Book[] = result.map((book) => ({
+    id: book.id,
+    title: book.title,
+    publisher: book.publisher?.name ?? undefined,
+    author: `${book.author.firstName} ${book.author.lastName}`,
+    image: book.coverUrl ?? "", // from backend
+    pages: book.pageCount,
+    categories: [NumberToBookCategoryMap[book.category]], // mapping number to name
+    description: book.blurp,
+    publishedDate: undefined,
+    isbn: book.isbn,
+    score: undefined,
+  }));
+
+  return mappedBooks;
 }
 
-// Books API calls
-export async function getBooks(params?: {
-  search?: string
-  status?: string
-  category?: string
-  page?: number
-  limit?: number
-}) {
-  const queryParams = new URLSearchParams()
 
-  if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        queryParams.append(key, value.toString())
-      }
-    })
-  }
 
-  const queryString = queryParams.toString() ? `?${queryParams.toString()}` : ""
-
-  const response = await fetch(`${API_BASE_URLS.books}${queryString}`, {
-    method: "GET",
-    credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-    },
-  })
-  return handleResponse<{ data: Book[]; total: number; page: number; limit: number }>(response)
-}
-
-export async function getBook(id: number | string) {
+export async function getBook(id: number) {
   const response = await fetch(`${API_BASE_URLS.books}/${id}`, {
     method: "GET",
     credentials: "include",
@@ -145,7 +138,7 @@ export async function addBook(bookData: Partial<Book>) {
   return handleResponse<{ data: Book; message: string }>(response)
 }
 
-export async function updateBook(id: number | string, bookData: Partial<Book>) {
+export async function updateBook(id: string, bookData: Partial<Book>) {
   const response = await fetch(`${API_BASE_URLS.books}/${id}`, {
     method: "PUT",
     credentials: "include",
@@ -157,7 +150,7 @@ export async function updateBook(id: number | string, bookData: Partial<Book>) {
   return handleResponse<{ data: Book; message: string }>(response)
 }
 
-export async function deleteBook(id: number | string) {
+export async function deleteBook(id: number) {
   const response = await fetch(`${API_BASE_URLS.books}/${id}`, {
     method: "DELETE",
     credentials: "include",
@@ -166,6 +159,27 @@ export async function deleteBook(id: number | string) {
     },
   })
   return handleResponse<{ message: string }>(response)
+}
+
+export async function getAuthor( id: string) {
+  const response = await fetch(`${API_BASE_URLS.author}/${id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+  return handleResponse<{ data: Book[] }>(response)
+}
+export async function getPublisher(id: string) {
+  const response = await fetch(`${API_BASE_URLS.publisher}/${id}`, {
+    method: "GET",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+  return handleResponse<{ data: Book[] }>(response)
 }
 
 export async function updateBookProgress(id: number | string, progress: { current: number; total: number }) {
@@ -266,13 +280,48 @@ export async function getCategories() {
 }
 
 // My List specific API calls (if needed)
-export async function getMyList() {
-  const response = await fetch(`${API_BASE_URLS.mylist}`, {
+export async function getMyList(userId: string) {
+  const response = await fetch(`${API_BASE_URLS.mylist}/${userId}`, {
     method: "GET",
     credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
   })
-  return handleResponse<{ data: Book[] }>(response)
+  return handleResponse<{ data: UserBook[] }>(response)
+}
+
+export async function addToMyList(bookData: Partial<UserBook>) {
+  const response = await fetch(`${API_BASE_URLS.mylist}`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bookData),
+  })
+  return handleResponse<{ data: UserBook; message: string }>(response)
+}
+
+export async function removeFromMyList(userBookId: string,) {  
+  const response = await fetch(`${API_BASE_URLS.mylist}/${userBookId}/`, {
+    method: "DELETE",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+  return handleResponse<{ message: string }>(response)
+}
+
+export async function updateMyList(userId: string, bookId: string, bookData: Partial<UserBook>) {
+  const response = await fetch(`${API_BASE_URLS.mylist}/${userId}/${bookId}`, {
+    method: "PUT",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(bookData),
+  })
+  return handleResponse<{ data: UserBook; message: string }>(response)
 }

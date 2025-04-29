@@ -5,9 +5,10 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Progress } from "@/components/ui/progress"
-import { getBooks } from "@/lib/api"
-import type { Book } from "@/types"
+import { getBooks, getMyList } from "@/lib/api"
+import type { Book, UserBook } from "@/types"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useAuth } from "@/contexts/auth-contexts"
 
 interface BookListProps {
   searchQuery?: string
@@ -15,55 +16,78 @@ interface BookListProps {
   categoryFilter?: string
 }
 
+type CombinedBook = Book & UserBook; // Merge types
+
 export function BookListWithApi({ searchQuery, statusFilter, categoryFilter }: BookListProps) {
-  const [books, setBooks] = useState<Book[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth(); 
+  const [userBooks, setUserBooks] = useState<UserBook[]>([]);
+  const [books, setBooks] = useState<Book[]>([]);
+  const [combinedBooks, setCombinedBooks] = useState<CombinedBook[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState({
     total: 0,
     page: 1,
     limit: 10,
-  })
+  });
 
   useEffect(() => {
     const fetchBooks = async () => {
-      setLoading(true)
+      setLoading(true);
       try {
-        const response = await getBooks({
-          search: searchQuery,
-          status: statusFilter,
-          category: categoryFilter,
-          page: pagination.page,
-          limit: pagination.limit,
-        })
-        setBooks(response.data)
-        setPagination({
-          total: response.total,
-          page: response.page,
-          limit: response.limit,
-        })
-        setError(null)
-      } catch (err) {
-        console.error("Error fetching books:", err)
-        setError("Failed to load books. Please try again later.")
-      } finally {
-        setLoading(false)
-      }
-    }
+        const [userBooksResponse, booksResponse] = await Promise.all([
+          getMyList(user.id),
+          getBooks()
+        ]);
 
-    fetchBooks()
-  }, [searchQuery, statusFilter, categoryFilter, pagination.page, pagination.limit])
+        setUserBooks(userBooksResponse.items);
+        setBooks(booksResponse);
+
+        setPagination({
+          total: userBooksResponse.total,
+          page: userBooksResponse.page,
+          limit: userBooksResponse.limit,
+        });
+
+        // Combine the data
+        const combined = userBooksResponse.items.map((userBook: UserBook) => {
+          const book = booksResponse.find((b) => b.id === Number(userBook.bookId));
+          if (!book) {
+            return null; // If somehow no matching book, skip it
+          }
+          return {
+            ...book,
+            status: userBook.status,
+            score: userBook.score ? userBook.score.toString() : undefined,
+            progress: userBook.progress || 0,
+            finishedAt: userBook.finishedAt,
+            createdAt: userBook.createdAt,
+          };
+        }).filter((b): b is CombinedBook => b !== null); // type guard
+
+        setCombinedBooks(combined);
+        setError(null);
+      } catch (err) {
+        console.error("Error fetching books:", err);
+        setError("Failed to load books. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, [searchQuery, statusFilter, categoryFilter, pagination.page, pagination.limit]);
 
   if (loading) {
-    return <BookListSkeleton />
+    return <BookListSkeleton />;
   }
 
   if (error) {
-    return <div className="p-4 text-red-500">{error}</div>
+    return <div className="p-4 text-red-500">{error}</div>;
   }
 
-  if (books.length === 0) {
-    return <div className="p-4 text-center">No books found. Try adjusting your filters.</div>
+  if (combinedBooks.length === 0) {
+    return <div className="p-4 text-center">No books found. Try adjusting your filters.</div>;
   }
 
   return (
@@ -81,7 +105,7 @@ export function BookListWithApi({ searchQuery, statusFilter, categoryFilter }: B
           </TableRow>
         </TableHeader>
         <TableBody>
-          {books.map((book) => (
+          {combinedBooks.map((book) => (
             <TableRow key={book.id}>
               <TableCell className="font-medium">{book.id}</TableCell>
               <TableCell>
@@ -95,7 +119,7 @@ export function BookListWithApi({ searchQuery, statusFilter, categoryFilter }: B
                 </div>
               </TableCell>
               <TableCell className="text-lg font-medium">{book.title}</TableCell>
-              <TableCell>{book.score}</TableCell>
+              <TableCell>{book.score ?? "N/A"}</TableCell>
               <TableCell>
                 <Badge
                   variant={book.status === "Read" ? "default" : book.status === "Reading" ? "secondary" : "outline"}
@@ -106,27 +130,27 @@ export function BookListWithApi({ searchQuery, statusFilter, categoryFilter }: B
               <TableCell>
                 <div className="space-y-2">
                   <div className="text-sm">
-                    {book.progress.current}/{book.progress.total}
+                    {book.progress ?? 0}/100
                   </div>
-                  <Progress value={(book.progress.current / book.progress.total) * 100} className="h-2 w-[100px]" />
+                  <Progress value={book.progress} className="h-2 w-[100px]" />
                 </div>
               </TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
                   {book.categories.map((category) => {
-                    let variant: "default" | "secondary" | "outline" = "default"
+                    let variant: "default" | "secondary" | "outline" = "default";
 
                     if (category === "Romance") {
-                      variant = "secondary"
+                      variant = "secondary";
                     } else if (category === "Young adults") {
-                      variant = "default"
+                      variant = "default";
                     }
 
                     return (
                       <Badge key={category} variant={variant} className="bg-blue-500">
                         {category}
                       </Badge>
-                    )
+                    );
                   })}
                 </div>
               </TableCell>
@@ -135,7 +159,7 @@ export function BookListWithApi({ searchQuery, statusFilter, categoryFilter }: B
         </TableBody>
       </Table>
     </div>
-  )
+  );
 }
 
 function BookListSkeleton() {
